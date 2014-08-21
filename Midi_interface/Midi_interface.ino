@@ -1,25 +1,28 @@
-/**********************************************************
- 
-  Bare Conductive Touch USB MIDI instrument
- 
- **********************************************************
-  
-  Turns the Touch Board into a USB MIDI interface and 
-  sends key presses and releases in accordance with 
-  electrode status. In its standard form, works as a USB
-  MIDI keyboard.
-  
-  Requires Arduino 1.5.6+ or greater and ARCore Hardware 
-  Cores (https://github.com/rkistner/arcore) - remember to
-  select "Bare Conductive Touch Board (arcore, iPad compatible)
-  in the Tools -> Board menu
-  
- **********************************************************  
- 
-  Code is by Stefan Dzisiewski-Smith for Bare Conductive 
+/*******************************************************************************
 
-***********************************************************/
+ Bare Conductive Touch USB MIDI instrument
+ -----------------------------------------
+ 
+ Midi_interface.ino - USB MIDI touch instrument - based on a piano
+ 
+ Requires Arduino 1.5.6+ or greater and ARCore Hardware Cores 
+ https://github.com/rkistner/arcore - remember to select 
+ Bare Conductive Touch Board (arcore, iPad compatible) in the Tools -> Board menu
+ 
+ Bare Conductive code written by Stefan Dzisiewski-Smith and Peter Krige.
+ 
+ This work is licensed under a Creative Commons Attribution-ShareAlike 3.0 
+ Unported License (CC BY-SA 3.0) http://creativecommons.org/licenses/by-sa/3.0/
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
 
+*******************************************************************************/
 
 #include <MPR121.h>
 #include <Wire.h>
