@@ -4,7 +4,7 @@
 Simple touch-to-USB-MIDI code for the [Bare Conductive Touch Board](http://www.bareconductive.com/shop/touch-board/). Touching an electrode sends a USB MIDI message with a note - the 12 electrodes are mapped to a scale with one semitone per electrode - 12 semitones = 1 octave!
 
 ## Requirements
-* [Arduino](http://arduino.cc/en/Main/Software) 1.5.6+.
+* [Arduino](http://arduino.cc/en/Main/Software) 1.5.6 or later
 
 * Arduino's instructions for installing libraries are available [here](http://arduino.cc/en/Guide/Libraries)
 	
