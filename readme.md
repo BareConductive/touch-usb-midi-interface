@@ -1,4 +1,4 @@
-[![Bare Conductive](https://www.dropbox.com/s/p0p71yid2t8tenp/LOGO_256x106.png?dl=1)](http://www.bareconductive.com/)
+[![Bare Conductive](https://www.dropbox.com/s/7qmvpvst3kal3qv/LOGO_256x106.png?dl=1)](http://www.bareconductive.com/)
 
 # Bare Conductive Touch USB MIDI interface code
 Simple touch-to-USB-MIDI code for the [Bare Conductive Touch Board](http://www.bareconductive.com/shop/touch-board/). Touching an electrode sends a USB MIDI message with a note - the 12 electrodes are mapped to a scale with one semitone per electrode - 12 semitones = 1 octave!
