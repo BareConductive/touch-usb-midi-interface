@@ -5,9 +5,8 @@
  
  Midi_interface.ino - USB MIDI touch instrument - based on a piano
  
- Requires Arduino 1.5.6+ or greater and ARCore Hardware Cores 
- https://github.com/rkistner/arcore - remember to select 
- Bare Conductive Touch Board (arcore, iPad compatible) in the Tools -> Board menu
+ Remember to select Bare Conductive Touch Board (USB MIDI, iPad compatible) 
+ in the Tools -> Board menu
  
  Bare Conductive code written by Stefan Dzisiewski-Smith and Peter Krige.
  
@@ -24,8 +23,12 @@
 
 *******************************************************************************/
 
+// compiler error handling
+#include "Compiler_Errors.h"
+
 #include <MPR121.h>
 #include <Wire.h>
+
 MIDIEvent e;
 
 #define numElectrodes 12
