@@ -28,7 +28,7 @@
 	  #error Please upgrade your Arduino IDE to 1.6.6 or greater
 	#else 
 		// check that are Conductive Touch Board (USB MIDI, iPad compatible) is selected in Tools -> Board
-		#ifndef ARDUINO_AVR_BARETOUCH
+		#if !defined(ARDUINO_AVR_BARETOUCH) || !defined(IPAD_COMPAT)
 		 	#error Please select "Bare Conductive Touch Board (USB MIDI, iPad compatible)" in the Tools -> Board menu.
 		#endif
  	#endif
