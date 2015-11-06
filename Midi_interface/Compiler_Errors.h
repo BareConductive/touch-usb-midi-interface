@@ -29,7 +29,7 @@
 	#else 
 		// check that are Conductive Touch Board (USB MIDI, iPad compatible) is selected in Tools -> Board
 		#ifndef ARDUINO_AVR_BARETOUCH
-		 	#error Please select "are Conductive Touch Board (USB MIDI, iPad compatible)" in the Tools -> Board menu.
+		 	#error Please select "Bare Conductive Touch Board (USB MIDI, iPad compatible)" in the Tools -> Board menu.
 		#endif
  	#endif
 
