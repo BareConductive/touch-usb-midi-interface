@@ -31,7 +31,13 @@
 
 MIDIEvent e;
 
-#define numElectrodes 12
+const unsigned char numElectrodes = 12;
+
+// if toggle is set to true, touching once turns the note on, again turns it off
+// if toggle is set to false, the note is only on while the electrode is touched
+const boolean toggle = false; 
+
+boolean noteStatus[numElectrodes] = {false, false, false, false, false, false, false, false, false, false, false, false};
 
 void setup() {
   MPR121.begin(0x5C);
@@ -53,14 +59,28 @@ void loop() {
       
       if(MPR121.isNewTouch(i)){
         // if we have a new touch, turn on the onboard LED and
-        // send a "note on" message
+        // send a "note on" message, or if in toggle mode, 
+        // toggle the message 
+
         digitalWrite(LED_BUILTIN, HIGH);
-        e.m1 = 0x90; 
+
+        if(!toggle){
+          e.m1 = 0x90; 
+        } else {
+          if(noteStatus[i]){
+            e.m1 = 0x80; 
+          } else {
+            e.m1 = 0x90; 
+          }
+          noteStatus[i] = !noteStatus[i]; // toggle note status
+        }
       } else if(MPR121.isNewRelease(i)){
         // if we have a new release, turn off the onboard LED and
-        // send a "note off" message
+        // send a "note off" message (unless we're in toggle mode)
         digitalWrite(LED_BUILTIN, LOW);
-        e.m1 = 0x80;
+        if(!toggle){
+          e.m1 = 0x80;
+        }
       } else {
         // else set a flag to do nothing...
         e.m1 = 0x00;  
