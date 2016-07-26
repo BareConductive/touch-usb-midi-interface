@@ -3,7 +3,7 @@
  Bare Conductive Touch USB MIDI instrument
  -----------------------------------------
  
- Midi_interface.ino - USB MIDI touch instrument - based on a piano
+ Midi_interface.ino - USB MIDI touch instrument
  
  Remember to select Bare Conductive Touch Board (USB MIDI, iPad compatible) 
  in the Tools -> Board menu
@@ -29,13 +29,22 @@
 #include <MPR121.h>
 #include <Wire.h>
 
-MIDIEvent e;
-
-const unsigned char numElectrodes = 12;
+const uint8_t numElectrodes = 12;
 
 // if toggle is set to true, touching once turns the note on, again turns it off
 // if toggle is set to false, the note is only on while the electrode is touched
 const boolean toggle = false; 
+
+// piano notes from C3 to B3 in semitones - you can replace these with your own values
+// for a custom note scale - http://newt.phys.unsw.edu.au/jw/notes.html has an excellent
+// reference to convert musical notes to MIDI note numbers
+const uint8_t notes[numElectrodes] = {59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48};
+const uint8_t channel = 0; // default channel is 0
+
+// if you're connecting to iMPC on the iPad, comment out the two lines above and uncomment the two lines below
+// iMPC expects note values in a very specific range - these map to pads 1 to 12
+// const uint8_t notes[numElectrodes] = {37, 36, 42, 82, 40, 38, 46, 44, 48, 47, 45, 43};
+// const uint8_t channel = 12; // iMPC works with inputs on channel 12
 
 boolean noteStatus[numElectrodes] = {false, false, false, false, false, false, false, false, false, false, false, false};
 
@@ -43,8 +52,6 @@ void setup() {
   MPR121.begin(0x5C);
   MPR121.setInterruptPin(4);
   MPR121.updateTouchData();
-  e.type = 0x08;
-  e.m3 = 127;  // maximum volume
   
   pinMode(LED_BUILTIN, OUTPUT);
 }
@@ -53,10 +60,6 @@ void loop() {
   if(MPR121.touchStatusChanged()){
     MPR121.updateTouchData();
     for(int i=0; i<numElectrodes; i++){
-      
-      // MIDI note mapping from electrode number to MIDI note
-      e.m2 = 48 + numElectrodes - 1 - i;
-      
       if(MPR121.isNewTouch(i)){
         // if we have a new touch, turn on the onboard LED and
         // send a "note on" message, or if in toggle mode, 
@@ -65,12 +68,12 @@ void loop() {
         digitalWrite(LED_BUILTIN, HIGH);
 
         if(!toggle){
-          e.m1 = 0x90; 
+          noteOn(channel, notes[i], 127); // maximum velocity
         } else {
           if(noteStatus[i]){
-            e.m1 = 0x80; 
+            noteOff(channel, notes[i], 127); // maximum velocity
           } else {
-            e.m1 = 0x90; 
+            noteOn(channel, notes[i], 127); // maximum velocity
           }
           noteStatus[i] = !noteStatus[i]; // toggle note status
         }
@@ -79,18 +82,19 @@ void loop() {
         // send a "note off" message (unless we're in toggle mode)
         digitalWrite(LED_BUILTIN, LOW);
         if(!toggle){
-          e.m1 = 0x80;
+          noteOff(channel, notes[i], 127); // maximum velocity
         }
-      } else {
-        // else set a flag to do nothing...
-        e.m1 = 0x00;  
-      }
-      // only send a USB MIDI message if we need to
-      if(e.m1 != 0x00){
-        MIDIUSB.write(e);
       }
     }
     // flush USB buffer to ensure all notes are sent
     MIDIUSB.flush(); 
   }
+}
+
+void noteOn(uint8_t channel, uint8_t pitch, uint8_t velocity) {
+  MIDIUSB.write({0x09, 0x90 | (channel & 0x0F), pitch, velocity});
+}
+
+void noteOff(uint8_t channel, uint8_t pitch, uint8_t velocity) {
+  MIDIUSB.write({0x08, 0x80 | (channel & 0x0F), pitch, velocity});
 }
