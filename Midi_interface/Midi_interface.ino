@@ -2,28 +2,29 @@
 
  Bare Conductive Touch USB MIDI instrument
  -----------------------------------------
- 
+
  Midi_interface.ino - USB MIDI touch instrument
- 
- Remember to select Bare Conductive Touch Board (USB MIDI, iPad compatible) 
+
+ Remember to select Bare Conductive Touch Board (USB MIDI, iPad compatible)
  in the Tools -> Board menu
- 
- Bare Conductive code written by Stefan Dzisiewski-Smith and Peter Krige.
- 
+
+ Bare Conductive code written by Stefan Dzisiewski-Smith, Peter Krige, Pascal
+ Loose and Szymon Kaliski.
+
  This work is licensed under a MIT license https://opensource.org/licenses/MIT
- 
+
  Copyright (c) 2016, Bare Conductive
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included in all
  copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -38,13 +39,14 @@
 #include "Compiler_Errors.h"
 
 #include <MPR121.h>
+#include <MPR121_Datastream.h>
 #include <Wire.h>
 
 const uint8_t numElectrodes = 12;
 
 // if toggle is set to true, touching once turns the note on, again turns it off
 // if toggle is set to false, the note is only on while the electrode is touched
-const boolean toggle = false; 
+const boolean toggle = false;
 
 // piano notes from C3 to B3 in semitones - you can replace these with your own values
 // for a custom note scale - http://newt.phys.unsw.edu.au/jw/notes.html has an excellent
@@ -63,43 +65,50 @@ void setup() {
   MPR121.begin(0x5C);
   MPR121.setInterruptPin(4);
   MPR121.updateTouchData();
-  
+
   pinMode(LED_BUILTIN, OUTPUT);
+  
+  MPR121.restoreSavedThresholds();
+  MPR121_Datastream.begin();
 }
 
 void loop() {
-  if(MPR121.touchStatusChanged()){
-    MPR121.updateTouchData();
-    for(int i=0; i<numElectrodes; i++){
-      if(MPR121.isNewTouch(i)){
-        // if we have a new touch, turn on the onboard LED and
-        // send a "note on" message, or if in toggle mode, 
-        // toggle the message 
+  MPR121.updateAll();
 
-        digitalWrite(LED_BUILTIN, HIGH);
+  for(int i=0; i<numElectrodes; i++){
+    if(MPR121.isNewTouch(i)){
+      // if we have a new touch, turn on the onboard LED and
+      // send a "note on" message, or if in toggle mode,
+      // toggle the message
 
-        if(!toggle){
-          noteOn(channel, notes[i], 127); // maximum velocity
-        } else {
-          if(noteStatus[i]){
-            noteOff(channel, notes[i], 127); // maximum velocity
-          } else {
-            noteOn(channel, notes[i], 127); // maximum velocity
-          }
-          noteStatus[i] = !noteStatus[i]; // toggle note status
-        }
-      } else if(MPR121.isNewRelease(i)){
-        // if we have a new release, turn off the onboard LED and
-        // send a "note off" message (unless we're in toggle mode)
-        digitalWrite(LED_BUILTIN, LOW);
-        if(!toggle){
+      digitalWrite(LED_BUILTIN, HIGH);
+
+      if(!toggle){
+        noteOn(channel, notes[i], 127); // maximum velocity
+      } else {
+        if(noteStatus[i]){
           noteOff(channel, notes[i], 127); // maximum velocity
+        } else {
+          noteOn(channel, notes[i], 127); // maximum velocity
         }
+        noteStatus[i] = !noteStatus[i]; // toggle note status
+      }
+    } else if(MPR121.isNewRelease(i)){
+      // if we have a new release, turn off the onboard LED and
+      // send a "note off" message (unless we're in toggle mode)
+      digitalWrite(LED_BUILTIN, LOW);
+      if(!toggle){
+        noteOff(channel, notes[i], 127); // maximum velocity
       }
     }
-    // flush USB buffer to ensure all notes are sent
-    MIDIUSB.flush(); 
   }
+
+  // flush USB buffer to ensure all notes are sent
+  MIDIUSB.flush();
+
+  MPR121_Datastream.update();
+
+  delay(10); // 10ms delay to give the USB MIDI target time to catch up
 }
 
 void noteOn(uint8_t channel, uint8_t pitch, uint8_t velocity) {
