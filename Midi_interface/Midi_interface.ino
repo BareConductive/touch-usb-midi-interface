@@ -38,67 +38,112 @@
 // compiler error handling
 #include "Compiler_Errors.h"
 
+// touch includes
 #include <MPR121.h>
 #include <MPR121_Datastream.h>
 #include <Wire.h>
 
-const uint8_t numElectrodes = 12;
+// touch constants
+const uint32_t BAUD_RATE = 115200;
+const uint8_t MPR121_ADDR = 0x5C;
+const uint8_t MPR121_INT = 4;
 
-// if toggle is set to true, touching once turns the note on, again turns it off
-// if toggle is set to false, the note is only on while the electrode is touched
-const boolean toggle = false;
+// MPR121 datastream behaviour constants
+const bool MPR121_DATASTREAM_ENABLE = false;
 
-// piano notes from C3 to B3 in semitones - you can replace these with your own values
-// for a custom note scale - http://newt.phys.unsw.edu.au/jw/notes.html has an excellent
-// reference to convert musical notes to MIDI note numbers
-const uint8_t notes[numElectrodes] = {59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48};
-const uint8_t channel = 0; // default channel is 0
+// MIDI behaviour constants
+const bool SWITCH_OFF = false;  // if set to "true", touching an electrode once turns the note on, touching it again turns it off
+                                   // if set to "false", the note is only on while the electrode is touched
+const uint8_t NOTES[] = {59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48};  // piano notes from C3 to B3 in semitones
+                                                                           // a full overview to convert musical notes to MIDI note can be found here:
+                                                                           // http://newt.phys.unsw.edu.au/jw/notes.html
+const uint8_t CHANNEL = 0;  // default channel is 0
 
-// if you're connecting to iMPC on the iPad, comment out the two lines above and uncomment the two lines below
-// iMPC expects note values in a very specific range - these map to pads 1 to 12
-// const uint8_t notes[numElectrodes] = {37, 36, 42, 82, 40, 38, 46, 44, 48, 47, 45, 43};
-// const uint8_t channel = 12; // iMPC works with inputs on channel 12
-
-boolean noteStatus[numElectrodes] = {false, false, false, false, false, false, false, false, false, false, false, false};
+// MIDI variables
+bool note_status[12] = {false, false, false, false, false, false, false, false, false, false, false, false};
 
 void setup() {
-  MPR121.begin(0x5C);
-  MPR121.setInterruptPin(4);
-  MPR121.updateTouchData();
+  Serial.begin(BAUD_RATE);
 
   pinMode(LED_BUILTIN, OUTPUT);
-  
-  MPR121.restoreSavedThresholds();
-  MPR121_Datastream.begin();
+
+  if (!MPR121.begin(MPR121_ADDR)) {
+    Serial.println("error setting up MPR121");
+    switch (MPR121.getError()) {
+      case NO_ERROR:
+        Serial.println("no error");
+        break;
+      case ADDRESS_UNKNOWN:
+        Serial.println("incorrect address");
+        break;
+      case READBACK_FAIL:
+        Serial.println("readback failure");
+        break;
+      case OVERCURRENT_FLAG:
+        Serial.println("overcurrent on REXT pin");
+        break;
+      case OUT_OF_RANGE:
+        Serial.println("electrode out of range");
+        break;
+      case NOT_INITED:
+        Serial.println("not initialised");
+        break;
+      default:
+        Serial.println("unknown error");
+        break;
+    }
+    while (1);
+  }
+
+  MPR121.setInterruptPin(MPR121_INT);
+
+  if (MPR121_DATASTREAM_ENABLE) {
+    MPR121.restoreSavedThresholds();
+    MPR121_Datastream.begin(&Serial);
+  } else {
+    MPR121.setTouchThreshold(40);
+    MPR121.setReleaseThreshold(20);
+  }
+
+  MPR121.setFFI(FFI_10);
+  MPR121.setSFI(SFI_10);
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);  // switch on user LED while auto calibrating electrodes
+
+  MPR121.setGlobalCDT(CDT_4US);  // reasonable for larger capacitances
+  MPR121.autoSetElectrodeCDC();  // autoset all electrode settings
+
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
 void loop() {
   MPR121.updateAll();
 
-  for(int i=0; i<numElectrodes; i++){
-    if(MPR121.isNewTouch(i)){
+  for (int i=0; i < 12; i++) {
+    if (MPR121.isNewTouch(i)) {
       // if we have a new touch, turn on the onboard LED and
       // send a "note on" message, or if in toggle mode,
       // toggle the message
-
       digitalWrite(LED_BUILTIN, HIGH);
 
-      if(!toggle){
-        noteOn(channel, notes[i], 127); // maximum velocity
+      if (!SWITCH_OFF) {
+        noteOn(CHANNEL, NOTES[i], 127);  // maximum velocity
       } else {
-        if(noteStatus[i]){
-          noteOff(channel, notes[i], 127); // maximum velocity
+        if (note_status[i]) {
+          noteOff(CHANNEL, NOTES[i], 127);  // maximum velocity
         } else {
-          noteOn(channel, notes[i], 127); // maximum velocity
+          noteOn(CHANNEL, NOTES[i], 127);  // maximum velocity
         }
-        noteStatus[i] = !noteStatus[i]; // toggle note status
+        note_status[i] = !note_status[i];  // toggle note status
       }
-    } else if(MPR121.isNewRelease(i)){
+    } else if (MPR121.isNewRelease(i)) {
       // if we have a new release, turn off the onboard LED and
       // send a "note off" message (unless we're in toggle mode)
       digitalWrite(LED_BUILTIN, LOW);
-      if(!toggle){
-        noteOff(channel, notes[i], 127); // maximum velocity
+
+      if (!SWITCH_OFF) {
+        noteOff(CHANNEL, NOTES[i], 127);  // maximum velocity
       }
     }
   }
@@ -106,9 +151,11 @@ void loop() {
   // flush USB buffer to ensure all notes are sent
   MIDIUSB.flush();
 
-  MPR121_Datastream.update();
+  if (MPR121_DATASTREAM_ENABLE) {
+    MPR121_Datastream.update();
+  }
 
-  delay(10); // 10ms delay to give the USB MIDI target time to catch up
+  delay(10);  // 10ms delay to give the USB MIDI target time to catch up
 }
 
 void noteOn(uint8_t channel, uint8_t pitch, uint8_t velocity) {
