@@ -53,7 +53,7 @@ const bool MPR121_DATASTREAM_ENABLE = false;
 
 // MIDI behaviour constants
 const bool SWITCH_OFF = false;  // if set to "true", touching an electrode once turns the note on, touching it again turns it off
-                                   // if set to "false", the note is only on while the electrode is touched
+                                 // if set to "false", the note is only on while the electrode is touched
 const uint8_t NOTES[] = {59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48};  // piano notes from C3 to B3 in semitones
                                                                            // a full overview to convert musical notes to MIDI note can be found here:
                                                                            // http://newt.phys.unsw.edu.au/jw/notes.html
@@ -107,13 +107,11 @@ void setup() {
 
   MPR121.setFFI(FFI_10);
   MPR121.setSFI(SFI_10);
-
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);  // switch on user LED while auto calibrating electrodes
-
   MPR121.setGlobalCDT(CDT_4US);  // reasonable for larger capacitances
-  MPR121.autoSetElectrodeCDC();  // autoset all electrode settings
-
+  
+  digitalWrite(LED_BUILTIN, HIGH);  // switch on user LED while auto calibrating electrodes
+  delay(1000);
+  MPR121.autoSetElectrodes();  // autoset all electrode settings
   digitalWrite(LED_BUILTIN, LOW);
 }
 
